@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mirror - Chat App</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    /* Minimal helper styles to keep layout reasonable if /styles.css doesn't cover auth UI */
+    .auth-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f6f7f8;
+      padding: 32px;
+    }
+    .auth-box {
+      width: 420px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+      padding: 28px;
+    }
+    .auth-box .header { text-align: center; margin-bottom: 18px; }
+    .auth-box .logo { font-size: 36px; }
+    .auth-box h1 { margin: 8px 0 6px; font-size: 20px; }
+    .auth-box .subtitle { color: #6b7280; font-size: 14px; margin-bottom: 18px; }
+    .phone-input { display:flex; gap:8px; align-items:center; }
+    .country-code { padding:8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; }
+    #phoneNumber { flex:1; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; }
+    .continue-btn { width:100%; margin-top:14px; padding:10px 12px; background:#10b981; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .divider { display:flex; align-items:center; gap:10px; margin:16px 0; color:#9ca3af; }
+    .divider::before, .divider::after { content:""; height:1px; background:#e5e7eb; flex:1; }
+    .social-buttons { display:flex; flex-direction:column; gap:10px; }
+    .social-btn { display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; border:1px solid #e5e7eb; background:#fff; cursor:pointer; font-weight:600; }
+    .social-icon { width:20px; height:20px; }
+    .terms { margin-top:14px; font-size:12px; color:#6b7280; text-align:center; }
+    .auth-footer { margin-top:12px; text-align:center; font-size:13px; color:#6b7280; }
+    .auth-footer a { color:#2563eb; text-decoration:none; }
+    /* Ensure app-container hidden initially and displayed as flex when shown */
+    .app-container { display: none; height:100vh; }
+    /* Mobile comfortable width */
+    @media (max-width:520px){
+      .auth-box { width:100%; padding:18px; border-radius:8px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Authentication (Sign-in) Container - from the provided sign-in HTML -->
+  <div id="authContainer" class="auth-container">
+    <div class="auth-box">
+      <div class="header">
+        <div class="logo">💬</div>
+        <h1>Sign in to Mirror</h1>
+        <p class="subtitle">Welcome back! Sign in with your phone number or social account</p>
+      </div>
+
+      <div class="form-section">
+        <div class="input-group">
+          <div class="phone-input">
+            <select class="country-code" id="countryCode">
+              <!-- same options as provided -->
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+91">🇮🇳 +91</option>
+              <option value="+61">🇦🇺 +61</option>
+              <option value="+86">🇨🇳 +86</option>
+              <option value="+234">🇳🇬 +234</option>
+              <option value="+254">🇰🇪 +254</option>
+              <option value="+65">🇸🇬 +65</option>
+              <option value="+971">🇦🇪 +971</option>
+              <!-- add the rest if you want -->
+            </select>
+            <input type="tel" id="phoneNumber" placeholder="Phone number" maxlength="15" />
+          </div>
+        </div>
+
+        <button class="continue-btn" id="phoneContinueBtn">Continue</button>
+
+        <div class="divider">
+          <span>OR</span>
+        </div>
+
+        <div class="social-buttons">
+          <button class="social-btn" id="googleBtn" aria-label="Continue with Google">
+            <svg class="social-icon" viewBox="0 0 24 24" fill="none" width="20" height="20" aria-hidden="true">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <button class="social-btn" id="facebookBtn" aria-label="Continue with Facebook">
+            <svg class="social-icon" viewBox="0 0 24 24" fill="#1877F2" width="20" height="20" aria-hidden="true">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+            Continue with Facebook
+          </button>
+
+          <button class="social-btn" id="instagramBtn" aria-label="Continue with Instagram">
+            <svg class="social-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <defs>
+                <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#FD5949;stop-opacity:1" />
+                  <stop offset="50%" style="stop-color:#D6249F;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#285AEB;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" fill="url(#instagram-gradient)"/>
+            </svg>
+            Continue with Instagram
+          </button>
+        </div>
+
+        <div class="terms">
+          By continuing, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+        </div>
+
+        <div class="auth-footer">
+          Don't have an account? <a href="#" id="showSignUpLink">Sign up</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- index.html (UNCHANGED - copied exactly as you provided) but app hidden until sign-in -->
+  <div class="app-container">
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="profile-pic" onclick="openProfileModal()" id="sidebarProfilePic">
+          <span id="sidebarInitials">M</span>
+        </div>
+        <div class="header-icons">
+          <button class="icon-btn" onclick="openNewChatModal()"><i class="fas fa-comment"></i></button>
+          <button class="icon-btn" onclick="toggleMenu()"><i class="fas fa-ellipsis-v"></i></button>
+        </div>
+      </div>
+
+      <div class="menu-dropdown" id="menuDropdown" style="display:none;">
+        <div class="menu-item" onclick="openProfileModal();toggleMenu()">Profile</div>
+        <div class="menu-item" onclick="openSettingsModal();toggleMenu()">Settings</div>
+        <div class="menu-item" onclick="toggleMenu()">Starred Messages</div>
+        <div class="menu-item" onclick="toggleMenu()">Log Out</div>
+      </div>
+
+      <div class="search-container">
+        <div class="search-box">
+          <i class="fas fa-search" style="color:#8696a0"></i>
+          <input type="text" placeholder="Search or start new chat" id="searchInput">
+        </div>
+      </div>
+
+      <div class="chat-list" id="chatList"></div>
+    </div>
+
+    <div class="chat-main">
+      <div id="emptyState" class="empty-state">
+        <i class="fas fa-comments" style="font-size:120px;color:#374248"></i>
+        <div class="empty-state-text">Mirror</div>
+        <div class="empty-state-subtext">Send and receive messages without keeping your phone online.<br>Use Mirror on up to 4 linked devices and 1 phone at the same time.</div>
+      </div>
+
+      <div id="chatArea" style="display:none;flex-direction:column;height:100%">
+        <div class="chat-header-main">
+          <div class="chat-header-info">
+            <div class="chat-avatar" id="chatHeaderAvatar"><span id="chatHeaderInitials">J</span></div>
+            <div>
+              <div class="chat-name" id="chatHeaderName">John Doe</div>
+              <div class="chat-time" style="font-size:13px;color:#8696a0">online</div>
+            </div>
+          </div>
+          <div class="chat-header-actions">
+            <button class="icon-btn"><i class="fas fa-video"></i></button>
+            <button class="icon-btn"><i class="fas fa-phone"></i></button>
+            <button class="icon-btn"><i class="fas fa-search"></i></button>
+            <button class="icon-btn" onclick="toggleMenu()"><i class="fas fa-ellipsis-v"></i></button>
+          </div>
+        </div>
+
+        <div class="messages-container" id="messagesContainer"></div>
+
+        <div class="input-area">
+          <button class="icon-btn"><i class="fas fa-smile"></i></button>
+          <button class="icon-btn"><i class="fas fa-paperclip"></i></button>
+          <textarea class="message-input" id="messageInput" placeholder="Type a message" rows="1"></textarea>
+          <button class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal" id="profileModal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Profile</div>
+        <button class="close-btn" onclick="closeModal('profileModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-edit-section">
+          <div class="profile-pic-large" id="profilePicLarge">
+            <span id="profileInitialsLarge">M</span>
+            <div class="upload-overlay" onclick="document.getElementById('profilePicInput').click()">
+              <i class="fas fa-camera"></i>
+            </div>
+          </div>
+          <input type="file" id="profilePicInput" accept="image/*">
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input type="text" class="form-input" id="profileName" value="Mirror User">
+          </div>
+          <div class="form-group">
+            <label class="form-label">About</label>
+            <input type="text" class="form-input" id="profileAbout" value="Hey there! I am using Mirror">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-input" id="profilePhone" value="+1 234 567 8900">
+          </div>
+          <button class="save-btn" onclick="saveProfile()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Settings</div>
+        <button class="close-btn" onclick="closeModal('settingsModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-list">
+          <div class="settings-item" onclick="openProfileModal()">
+            <div class="settings-title">Account</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-title">Chats</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-title">Notifications</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-title">Storage and data</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-title">Privacy</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Chat Modal -->
+  <div class="modal" id="newChatModal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">New Chat</div>
+        <button class="close-btn" onclick="closeModal('newChatModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="contacts-list" id="contactsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Minimal JS to connect the sign-in UI to showing the app container.
+    (function(){
+      function showApp() {
+        var auth = document.getElementById('authContainer');
+        var app = document.querySelector('.app-container');
+        if(auth) auth.style.display = 'none';
+        if(app) app.style.display = 'flex';
+        // Optionally show chat empty state / initialize initials
+        var sidebarInitials = document.getElementById('sidebarInitials');
+        var profileInitialsLarge = document.getElementById('profileInitialsLarge');
+        if(sidebarInitials) sidebarInitials.textContent = 'M';
+        if(profileInitialsLarge) profileInitialsLarge.textContent = 'M';
+      }
+
+      document.getElementById('phoneContinueBtn').addEventListener('click', function(e){
+        // Here you would validate phone number and trigger OTP / auth flow.
+        // For this integration, just show the app.
+        showApp();
+      });
+
+      ['googleBtn','facebookBtn','instagramBtn'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(el) el.addEventListener('click', function(e){
+          // Real implementation would start OAuth flow. For now, just show app.
+          showApp();
+        });
+      });
+
+      // Optional "Sign up" link handler (just shows the same auth UI or can open a sign-up modal)
+      var signUpLink = document.getElementById('showSignUpLink');
+      if(signUpLink){
+        signUpLink.addEventListener('click', function(e){
+          e.preventDefault();
+          // For now, just reuse auth UI - in a real app you'd show a dedicated sign-up form/modal.
+          alert('Sign up flow not implemented in this static preview. Proceeding to app for demo.');
+          showApp();
+        });
+      }
+
+      // Simple helpers for menu, modals (minimal to avoid errors if app.js not present)
+      window.toggleMenu = function(){
+        var menu = document.getElementById('menuDropdown');
+        if(!menu) return;
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+      };
+      window.openProfileModal = function(){
+        var m = document.getElementById('profileModal');
+        if(m) m.style.display = 'block';
+      };
+      window.openSettingsModal = function(){
+        var m = document.getElementById('settingsModal');
+        if(m) m.style.display = 'block';
+      };
+      window.openNewChatModal = function(){
+        var m = document.getElementById('newChatModal');
+        if(m) m.style.display = 'block';
+      };
+      window.closeModal = function(id){
+        var m = document.getElementById(id);
+        if(m) m.style.display = 'none';
+      };
+      window.saveProfile = function(){
+        // minimal placeholder
+        closeModal('profileModal');
+      };
+      window.sendMessage = function(){
+        var text = document.getElementById('messageInput');
+        if(!text) return;
+        if(!text.value.trim()) return;
+        var container = document.getElementById('messagesContainer');
+        if(container){
+          var msg = document.createElement('div');
+          msg.className = 'message outgoing';
+          msg.textContent = text.value;
+          container.appendChild(msg);
+          container.scrollTop = container.scrollHeight;
+        }
+        text.value = '';
+      };
+    })();
+  </script>
+
+  <script src="/app.js"></script>
+</body>
+</html>
