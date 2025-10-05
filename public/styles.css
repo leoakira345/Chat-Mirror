@@ -1,22 +1,6 @@
-/* Merged styles.css
-   Base: dark theme (provided), plus added file picker, file previews, and a few helpers
-   (integrated from the lighter styles you gave, adapted for the dark theme)
-*/
+/* styles.css - base + extended styles for attachments and emoji picker */
 
-/* Reset */
 *{margin:0;padding:0;box-sizing:border-box}
-
-/* Theme variables (dark-friendly) */
-:root{
-  --primary:#00a884;
-  --muted:#8696a0;
-  --bubble-bg:#1b2a2b;
-  --bubble-own:#005c4b;
-  --bg:#0b141a;
-  --panel:#202c33;
-}
-
-/* Base body/layout */
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#111b21;height:100vh;overflow:hidden}
 .app-container{display:flex;height:100vh;max-width:1600px;margin:0 auto;background:#222e35}
 .sidebar{width:400px;background:#111b21;display:flex;flex-direction:column;border-right:1px solid #2a3942}
@@ -39,54 +23,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .chat-name{color:#e9edef;font-size:16px}
 .chat-time{color:#8696a0;font-size:12px}
 .chat-preview{color:#8696a0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* Main chat area */
-.chat-main{flex:1;display:flex;flex-direction:column;background:var(--bg)}
-.chat-header-main{background:var(--panel);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;height:60px}
+.chat-main{flex:1;display:flex;flex-direction:column;background:#0b141a}
+.chat-header-main{background:#202c33;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;height:60px}
 .chat-header-info{display:flex;align-items:center;gap:12px;flex:1;cursor:pointer}
 .chat-header-actions{display:flex;gap:20px}
 .messages-container{flex:1;overflow-y:auto;padding:20px}
 .message{display:flex;margin-bottom:12px;animation:fadeIn .3s}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.message.received{justify-content:flex-start}
 .message.sent{justify-content:flex-end}
 .message-bubble{max-width:65%;padding:8px 12px;border-radius:8px}
 .message.received .message-bubble{background:#202c33;color:#e9edef}
-.message.sent .message-bubble{background:var(--bubble-own);color:#e9edef}
+.message.sent .message-bubble{background:#005c4b;color:#e9edef}
 .message-text{font-size:14px;line-height:1.5;word-wrap:break-word}
-.message-time{font-size:11px;color:var(--muted);margin-top:4px;text-align:right}
-
-/* Input area */
-.input-area{background:var(--panel);padding:10px 16px;display:flex;align-items:center;gap:12px}
+.message-time{font-size:11px;color:#8696a0;margin-top:4px;text-align:right}
+.input-area{background:#202c33;padding:10px 16px;display:flex;align-items:center;gap:12px;position:relative}
 .message-input{flex:1;background:#2a3942;border:none;border-radius:8px;padding:10px 16px;color:#e9edef;font-size:15px;outline:none;resize:none;max-height:100px;font-family:inherit}
-.send-btn{background:var(--primary);border:none;width:45px;height:45px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;color:#111b21;font-size:20px}
+.send-btn{background:#00a884;border:none;width:45px;height:45px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;color:#111b21;font-size:20px}
 .send-btn:hover{background:#06cf9c}
-
-/* Modal */
 .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center}
 .modal.active{display:flex}
-.modal-content{background:var(--panel);border-radius:8px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto;animation:slideUp .3s}
+.modal-content{background:#202c33;border-radius:8px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto;animation:slideUp .3s}
 @keyframes slideUp{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
 .modal-header{padding:20px;border-bottom:1px solid #2a3942;display:flex;justify-content:space-between;align-items:center}
 .modal-title{color:#e9edef;font-size:20px;font-weight:500}
-.close-btn{background:none;border:none;color:var(--muted);font-size:28px;cursor:pointer}
+.close-btn{background:none;border:none;color:#8696a0;font-size:28px;cursor:pointer}
 .modal-body{padding:20px}
 .profile-edit-section{display:flex;flex-direction:column;align-items:center;gap:24px}
 .profile-pic-large{width:120px;height:120px;border-radius:50%;background:#6b7c85;display:flex;align-items:center;justify-content:center;color:#fff;font-size:48px;overflow:hidden;position:relative}
 .profile-pic-large img{width:100%;height:100%;object-fit:cover}
-.upload-overlay{position:absolute;bottom:0;right:0;background:var(--primary);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:3px solid var(--panel);color:#fff;font-size:16px}
+.upload-overlay{position:absolute;bottom:0;right:0;background:#00a884;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:3px solid #202c33;color:#fff;font-size:16px}
 .form-group{width:100%;margin-bottom:20px}
-.form-label{color:var(--primary);font-size:13px;margin-bottom:8px;display:block}
+.form-label{color:#00a884;font-size:13px;margin-bottom:8px;display:block}
 .form-input{width:100%;background:#2a3942;border:none;border-bottom:2px solid #2a3942;padding:12px;color:#e9edef;font-size:16px;outline:none}
-.form-input:focus{border-bottom-color:var(--primary)}
-.save-btn{background:var(--primary);color:#fff;border:none;padding:12px 24px;border-radius:6px;font-size:15px;cursor:pointer;width:100%;margin-top:12px}
+.form-input:focus{border-bottom-color:#00a884}
+.save-btn{background:#00a884;color:#fff;border:none;padding:12px 24px;border-radius:6px;font-size:15px;cursor:pointer;width:100%;margin-top:12px}
 .save-btn:hover{background:#06cf9c}
-
-/* Empty state */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);gap:16px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#8696a0;gap:16px}
 .empty-state-text{font-size:32px;font-weight:300}
 .empty-state-subtext{font-size:14px;text-align:center;max-width:450px;line-height:1.5}
-
-/* Contacts / settings */
 .contacts-list{max-height:400px;overflow-y:auto}
 .contact-item{display:flex;align-items:center;padding:12px 16px;cursor:pointer;transition:background .2s}
 .contact-item:hover{background:#2a3942}
@@ -102,259 +77,22 @@ input[type="file"]{display:none}
 .settings-item:hover{background:#2a3942;padding-left:16px;padding-right:16px;margin:0 -16px}
 .settings-title{color:#e9edef;font-size:16px}
 
-/* --------------------------------------------
-   Additional elements added from the lighter styles
-   (file popover, previews, helper classes, and small tweaks)
-   Adapted for dark theme and integrated to avoid overriding core layout
-   -------------------------------------------- */
+/* Attachments and Emoji picker UI */
+.attach-dropdown{ position:absolute; bottom:8px; left:8px; background:#111b21; border-radius:6px; box-shadow: 0 4px 12px rgba(0,0,0,.6); overflow:hidden; z-index: 50; }
+.attach-dropdown .attach-option{ padding:10px 12px; font-size:13px; color:#e9edef; cursor:pointer; white-space:nowrap; }
+.attach-dropdown .attach-option:hover{ background:#2a3942; }
 
-/* Small helper */
-.small{font-size:12px;color:var(--muted);}
+/* Emoji picker */
+.emoji-picker{ position:absolute; bottom:60px; left:60px; background:#111b21; padding:6px; border-radius:6px; display:flex; gap:6px; z-index:60; }
+.emoji-btn{ background:none; border:none; font-size:20px; cursor:pointer; padding:6px 8px; color:#e9edef; }
+.emoji-btn:hover{ background:#2a3942; border-radius:4px; }
 
-/* File popover (floating file picker) */
-.file-popover{position:absolute;bottom:60px;left:12px;background:var(--panel);border:1px solid #2a3942;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.6);padding:8px;display:flex;gap:8px;z-index:100}
-.file-popover .pop-btn{display:flex;flex-direction:column;align-items:center;padding:8px;border-radius:8px;cursor:pointer;width:72px}
-.file-popover .pop-btn i{font-size:20px;color:var(--primary);margin-bottom:6px}
-.file-popover .pop-btn span{font-size:12px;color:#e9edef;text-align:center}
-
-/* File preview components (images, audio, docs) */
-.file-preview{margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid #233138;background:#0e1a1b;color:#e9edef}
-.file-preview img{max-width:100%;height:auto;display:block}
-.file-preview audio{width:100%;display:block;background:transparent}
-.file-preview .doc-box{display:flex;align-items:center;gap:10px;padding:8px}
-.file-preview .doc-icon{font-size:24px;color:var(--primary)}
-.file-preview .doc-info{font-size:14px;color:#e9edef}
-
-/* Provide compatibility between lighter .msg classes and current .message classes */
-/* This allows any components using .msg to still look correct in the dark theme */
-.msg{max-width:70%;margin-bottom:10px;padding:8px 10px;border-radius:10px;display:inline-block;box-shadow:0 1px 0 rgba(0,0,0,0.2)}
-.msg.me{background:var(--bubble-own);margin-left:auto;color:#e9edef}
-.msg.other{background:var(--bubble-bg);margin-right:auto;color:#e9edef}
-.msg .meta{font-size:12px;color:var(--muted);margin-top:6px}
-.msg .file-preview{margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid #233138}
-
-/* Image/audio/doc previews referenced via .msg .file-preview */
-.msg .file-preview img{max-width:100%;height:auto;display:block}
-.msg .file-preview audio{width:100%;display:block}
-.msg .file-preview .doc-box{display:flex;align-items:center;gap:10px;padding:8px}
-.msg .file-preview .doc-icon{font-size:24px;color:var(--primary)}
-.msg .file-preview .doc-info{font-size:14px;color:#e9edef}
-
-/* Basic layout & small additions for popover and preview items (from original light styles) */
-:root{
-  /* ensure these exist even if not used directly: kept for compatibility */
-  --primary-accent:var(--primary);
-  --muted-accent:var(--muted);
+/* Ensure the chat area is scrollable on small heights */
+@media (max-height: 700px){
+  .messages-container{ padding:12px;}
 }
 
-/* Responsive tweaks */
-@media (max-width:800px){
-  .sidebar{display:none}
-}
-
-/* Light-theme optional block:
-   If you want to support a toggleable light theme, add class "light-theme" to body.
-   The following selectors adjust a few key variables and panels when light-theme is present.
-*/
-body.light-theme{
-  --primary:#2b7a78;
-  --muted:#8696a0;
-  --bubble-bg:#e6f0f0;
-  --bubble-own:#dcf8c6;
-  --bg:#f5f7f7;
-  --panel:#ffffff;
-  background:var(--bg);
-}
-body.light-theme .chat-main{background:linear-gradient(180deg,#f8fafb,#ffffff 30%)}
-body.light-theme .sidebar{background:#fff}
-body.light-theme .sidebar-header{background:transparent}
-body.light-theme .search-container{background:transparent}
-body.light-theme .search-box{background:#f0f3f3}
-body.light-theme .search-box input{color:#222}
-body.light-theme .chat-name{color:#222}
-body.light-theme .chat-preview{color:var(--muted)}
-body.light-theme .message.received .message-bubble{background:var(--bubble-bg);color:#222}
-body.light-theme .message.sent .message-bubble{background:var(--bubble-own);color:#222}
-body.light-theme .modal-content{background:#fff}
-body.light-theme .file-popover{background:#fff;border-color:#e6e6e6;box-shadow:0 6px 20px rgba(0,0,0,0.08)}
-body.light-theme .file-preview{background:transparent;border:1px solid #eaeaea;color:#222}
-body.light-theme .msg{box-shadow:0 1px 0 rgba(0,0,0,0.03)}
-
-/* Merged-in lighter/sign-in styles appended below (unchanged) */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(to bottom, #00a884 0%, #00a884 130px, #f0f2f5 130px, #f0f2f5 100%);
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.container {
-    background: white;
-    width: 100%;
-    max-width: 420px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-}
-
-.header {
-    text-align: center;
-    padding: 40px 30px 30px;
-    background: white;
-}
-
-.logo {
-    width: 60px;
-    height: 60px;
-    background: #00a884;
-    border-radius: 50%;
-    margin: 0 auto 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    color: white;
-}
-
-h1 {
-    font-size: 24px;
-    font-weight: 500;
-    color: #111;
-    margin-bottom: 10px;
-}
-
-.subtitle {
-    font-size: 14px;
-    color: #667781;
-    line-height: 1.5;
-}
-
-.form-section {
-    padding: 20px 30px 30px;
-}
-
-.input-group {
-    margin-bottom: 20px;
-}
-
-.phone-input {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.country-code {
-    width: 100px;
-    padding: 12px;
-    border: 1px solid #d1d7db;
-    border-radius: 8px;
-    font-size: 15px;
-    background: white;
-    cursor: pointer;
-}
-
-input[type="tel"] {
-    flex: 1;
-    padding: 12px;
-    border: 1px solid #d1d7db;
-    border-radius: 8px;
-    font-size: 15px;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-input[type="tel"]:focus {
-    border-color: #00a884;
-}
-
-.continue-btn {
-    width: 100%;
-    padding: 14px;
-    background: #00a884;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.continue-btn:hover {
-    background: #008f6f;
-}
-
-.divider {
-    display: flex;
-    align-items: center;
-    margin: 25px 0;
-    color: #8696a0;
-    font-size: 13px;
-}
-
-.divider::before,
-.divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: #e9edef;
-}
-
-.divider span {
-    padding: 0 16px;
-}
-
-.social-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.social-btn {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #d1d7db;
-    border-radius: 8px;
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    cursor: pointer;
-    font-size: 15px;
-    color: #111;
-    transition: all 0.2s;
-}
-
-.social-btn:hover {
-    background: #f5f6f6;
-    border-color: #b8bec3;
-}
-
-.social-icon {
-    width: 20px;
-    height: 20px;
-}
-
-.terms {
-    text-align: center;
-    font-size: 12px;
-    color: #8696a0;
-    line-height: 1.6;
-    margin-top: 20px;
-    padding: 0 10px;
-}
-
-.terms a {
-    color: #00a884;
-    text-decoration: none;
-}
+/* New friend UI helpers (optional styling for mock panels) */
+#foundUserPanel{ display:flex; align-items:center; gap:12px; }
+#incomingRequestsPanel{ display:none; }
+.incoming-request-item{ display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid #2a3942; }
