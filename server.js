@@ -1,341 +1,157 @@
-// server.js
-require('dotenv').config();
-console.log("server.js has started");
+// server.js - lightweight Node/Express backend for the Mirror frontend
+// - Serves static frontend from ./public
+// - Exposes /api/init, /api/profile, /api/chats/:chatId, /api/chats/:chatId/messages, /api/chats/:chatId/files
+// - Handles file uploads via multer and stores in ./uploads (served statically at /uploads)
+
+'use strict';
+
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
-const bodyParser = require('body-parser');
-const session = require('express-session');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
-const InstagramStrategy = require('passport-instagram').Strategy; // optional; ensure installed
-const crypto = require('crypto');
+const fs = require('fs');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// In-memory store for OTPs: { "+1|123456789": { otp: '123456', expiresAt: ... } }
-// For production use a proper datastore and expiry mechanism
-const otpStore = new Map();
+// Middleware
+app.use(cors({ origin: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-// In-memory data (for demo). Replace with DB as needed.
-const db = {
-  user: {
-    name: 'Mirror User',
-    about: 'Hey there! I am using Mirror',
-    phone: '+1 234 567 8900',
-    avatar: null
+// Static for uploads (files attached in chats)
+const uploadsDir = path.join(__dirname, 'uploads');
+fs.mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', express.static(uploadsDir));
+
+// Static for frontend (public folder with index.html, app.js, styles.css, etc)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Multer storage for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
   },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '';
+    const base = path.basename(file.originalname, ext).replace(/\s+/g, '_');
+    const unique = Date.now() + '-' + Math.floor(Math.random() * 1e9);
+    cb(null, base + '-' + unique + ext);
+  }
+});
+const upload = multer({ storage });
+
+// In-memory mock data to support frontend flows
+let dataStore = {
+  user: { id: '100001', name: 'You', about: '', phone: '' },
   contacts: [
-    { id: 1, name: 'John Doe', avatar: null },
-    { id: 2, name: 'Jane Smith', avatar: null },
-    { id: 3, name: 'Mike Johnson', avatar: null },
-    { id: 4, name: 'Sarah Wilson', avatar: null },
-    { id: 5, name: 'Tom Brown', avatar: null }
+    { id: '200001', name: 'Alex Chen' },
+    { id: '200002', name: 'Priya Patel' },
+    { id: '300001', name: 'Luis Martinez' },
+    { id: '300002', name: 'Emma Rossi' }
   ],
   chats: [
-    // sample chat:
-    // { id: 1630000000000, contactId: 1, name: 'John Doe', messages: [{text:'hi', type:'received', time:'12:00'}], lastMessage:'hi', time:'12:00' }
+    // Example chat shape (optional pre-seed)
+    // {
+    //   id: 'c1001',
+    //   name: 'Alex Chen',
+    //   time: '12:34',
+    //   lastMessage: 'Hi!',
+    //   messages: [{ text: 'Hi', type: 'sent', time: '12:33' }]
+    // }
   ]
 };
 
-// Helpers from Mirror app
-function getChatById(id) {
-  return db.chats.find(c => c.id === Number(id));
+// Helpers
+function generateChatId() {
+  const base = (dataStore.chats?.length || 0) + 1;
+  return 'c' + (1000 + base + Math.floor(Math.random() * 900)).toString().slice(-4);
 }
-
-function getChatByContactId(contactId) {
-  return db.chats.find(c => c.contactId === Number(contactId));
+function findChat(chatId) {
+  return dataStore.chats.find(c => c.id === chatId);
 }
+function currentUserId(){ return dataStore.user?.id || '100001'; }
 
-function genTime() {
-  return new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-}
+// Routes
 
-// Middlewares
-app.use(bodyParser.json({ limit: '10mb' })); // allow base64 images
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false }, // set secure:true on HTTPS
-}));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Passport user serialization
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
-});
-
-// ---------- Passport Strategies (fill env vars) ----------
-// Google
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK || '/auth/google/callback',
-  }, (accessToken, refreshToken, profile, done) => {
-    // In production, link/create user in DB here
-    done(null, { provider: 'google', profile });
-  }));
-}
-
-// Facebook
-if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
-  passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_CLIENT_ID,
-    clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-    callbackURL: process.env.FACEBOOK_CALLBACK || '/auth/facebook/callback',
-    profileFields: ['id', 'displayName', 'photos', 'email']
-  }, (accessToken, refreshToken, profile, done) => {
-    done(null, { provider: 'facebook', profile });
-  }));
-}
-
-// Instagram (passport-instagram)
-// Note: Instagram API policies changed; for many apps you'll need the Instagram Basic Display or Graph API.
-// This code uses passport-instagram as an example if you have an OAuth app set up.
-if (process.env.INSTAGRAM_CLIENT_ID && process.env.INSTAGRAM_CLIENT_SECRET) {
-  passport.use(new InstagramStrategy({
-    clientID: process.env.INSTAGRAM_CLIENT_ID,
-    clientSecret: process.env.INSTAGRAM_CLIENT_SECRET,
-    callbackURL: process.env.INSTAGRAM_CALLBACK || '/auth/instagram/callback'
-  }, (accessToken, refreshToken, profile, done) => {
-    done(null, { provider: 'instagram', profile });
-  }));
-}
-
-// ---------- Routes ----------
-
-// Mock phone OTP request
-app.post('/auth/phone', (req, res) => {
-  const { countryCode, phoneNumber } = req.body || {};
-  if (!countryCode || !phoneNumber) {
-    return res.status(400).json({ message: 'Missing countryCode or phoneNumber' });
-  }
-
-  const key = `${countryCode}|${phoneNumber}`;
-  // generate 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = Date.now() + (5 * 60 * 1000); // 5 minutes
-
-  otpStore.set(key, { otp, expiresAt });
-
-  // TODO: integrate with SMS provider instead of console.log
-  console.log(`[OTP SENT] ${key} -> ${otp} (expires in 5 minutes)`);
-
-  res.json({ message: 'OTP sent (for demo check server logs)' });
-});
-
-// Verify OTP
-app.post('/auth/verify-otp', (req, res) => {
-  const { countryCode, phoneNumber, otp } = req.body || {};
-  if (!countryCode || !phoneNumber || !otp) {
-    return res.status(400).json({ message: 'Missing parameters' });
-  }
-
-  const key = `${countryCode}|${phoneNumber}`;
-  const record = otpStore.get(key);
-  if (!record) {
-    return res.status(400).json({ message: 'No OTP requested for this number' });
-  }
-
-  if (Date.now() > record.expiresAt) {
-    otpStore.delete(key);
-    return res.status(400).json({ message: 'OTP expired' });
-  }
-
-  if (record.otp !== otp) {
-    return res.status(400).json({ message: 'Invalid OTP' });
-  }
-
-  // OTP valid: create a basic session user
-  const user = { id: crypto.randomUUID(), provider: 'phone', phone: `${countryCode} ${phoneNumber}` };
-  req.login(user, (err) => {
-    if (err) {
-      return res.status(500).json({ message: 'Login error' });
-    }
-    otpStore.delete(key);
-    return res.json({ message: 'Verified', user });
-  });
-});
-
-// ---------- Social login routes using passport ----------
-
-// Google
-app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
-);
-
-app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/auth/failure' }),
-  (req, res) => {
-    // Successful auth, redirect to profile or front-end route
-    res.redirect('/auth/success');
-  }
-);
-
-// Facebook
-app.get('/auth/facebook',
-  passport.authenticate('facebook', { scope: ['email'] })
-);
-
-app.get('/auth/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/auth/failure' }),
-  (req, res) => res.redirect('/auth/success')
-);
-
-// Instagram
-app.get('/auth/instagram',
-  passport.authenticate('instagram')
-);
-
-app.get('/auth/instagram/callback',
-  passport.authenticate('instagram', { failureRedirect: '/auth/failure' }),
-  (req, res) => res.redirect('/auth/success')
-);
-
-// Simple success/failure pages (can be improved)
-app.get('/auth/success', (req, res) => {
-  if (!req.user) {
-    return res.redirect('/auth/failure');
-  }
-  // server will serve a small html page with user info
-  res.send(`
-    <h1>Login successful</h1>
-    <pre>${JSON.stringify(req.user, null, 2)}</pre>
-    <p><a href="/">Go back</a></p>
-    <p><a href="/logout">Logout</a></p>
-  `);
-});
-
-app.get('/auth/failure', (req, res) => {
-  res.send('<h1>Authentication Failed</h1><p><a href="/">Try again</a></p>');
-});
-
-app.get('/logout', (req, res, next) => {
-  // Support both callback and no-callback signatures of req.logout
-  try {
-    req.logout(() => {
-      res.redirect('/');
-    });
-  } catch (e) {
-    // older versions may not accept callback
-    req.logout();
-    res.redirect('/');
-  }
-});
-
-// Protected profile endpoint
-app.get('/profile', (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Not authenticated' });
-  }
-  res.json({ user: req.user });
-});
-
-// Mirror app API Endpoints
-
+// Initialization data (frontend calls /api/init on startup)
 app.get('/api/init', (req, res) => {
   res.json({
-    user: db.user,
-    contacts: db.contacts,
-    chats: db.chats
+    user: dataStore.user,
+    contacts: dataStore.contacts,
+    chats: dataStore.chats
   });
 });
 
-app.get('/api/contacts', (req, res) => {
-  res.json(db.contacts);
+// Update / save profile
+app.post('/api/profile', (req, res) => {
+  const updated = Object.assign({}, dataStore.user, req.body || {});
+  dataStore.user = updated;
+  res.json({ user: updated });
 });
 
-app.get('/api/chats', (req, res) => {
-  res.json(db.chats);
-});
-
-app.get('/api/chats/:id', (req, res) => {
-  const chat = getChatById(req.params.id);
+// Get a specific chat
+app.get('/api/chats/:chatId', (req, res) => {
+  const chatId = req.params.chatId;
+  const chat = findChat(chatId);
   if (!chat) return res.status(404).json({ error: 'Chat not found' });
   res.json(chat);
 });
 
-app.post('/api/chats', (req, res) => {
-  const { contactId } = req.body;
-  if (typeof contactId === 'undefined') return res.status(400).json({ error: 'contactId is required' });
+// Post a new message to a chat
+app.post('/api/chats/:chatId/messages', (req, res) => {
+  const chatId = req.params.chatId;
+  const { text, type } = req.body || {};
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  let chat = getChatByContactId(contactId);
-  if (chat) {
-    return res.json(chat);
+  let chat = findChat(chatId);
+  if (!chat) {
+    // Create a new chat stub if it doesn't exist yet
+    chat = { id: chatId, name: 'Chat', time, lastMessage: text || '', messages: [] };
+    dataStore.chats.push(chat);
   }
 
-  const contact = db.contacts.find(c => c.id === Number(contactId));
-  if (!contact) return res.status(404).json({ error: 'Contact not found' });
+  chat.messages = chat.messages || [];
+  chat.messages.push({ text: text || '', type: type || 'sent', time });
+  chat.lastMessage = text || '';
+  chat.time = time;
 
-  const newChat = {
-    id: Date.now(),
-    contactId: contact.id,
-    name: contact.name,
-    messages: [],
-    lastMessage: '',
-    time: genTime()
-  };
-  db.chats.push(newChat);
-  res.json(newChat);
+  res.json({ ok: true });
 });
 
-app.post('/api/chats/:id/messages', (req, res) => {
-  const chat = getChatById(req.params.id);
-  if (!chat) return res.status(404).json({ error: 'Chat not found' });
-  const { text, type } = req.body;
-  if (!text) return res.status(400).json({ error: 'text is required' });
+// Upload a file attached to a chat
+app.post('/api/chats/:chatId/files', upload.single('file'), (req, res) => {
+  const chatId = req.params.chatId;
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: 'No file uploaded' });
 
-  const message = {
-    text,
-    type: type || 'sent',
-    time: genTime()
+  const isImage = /^image\//.test(file.mimetype || '');
+  const fileUrl = '/uploads/' + file.filename;
+
+  res.json({ fileUrl, isImage, fileName: file.originalname });
+});
+
+// Optional helper: start a new chat (not strictly required by the frontend)
+app.post('/api/start-chat', (req, res) => {
+  const { name } = req.body || {};
+  const chatId = generateChatId();
+  const chat = {
+    id: chatId,
+    name: name || 'New Chat',
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    lastMessage: 'Chat started.',
+    messages: []
   };
-
-  chat.messages.push(message);
-  chat.lastMessage = text;
-  chat.time = genTime();
-
-  // Simulate an automated reply after 1s
-  setTimeout(() => {
-    const responses = ['Hey! How are you?', 'That sounds great!', 'I agree with you.', 'Interesting point!', 'Let me think about it.', 'Sure, no problem!', 'Thanks for letting me know.'];
-    const random = responses[Math.floor(Math.random() * responses.length)];
-    const reply = { text: random, type: 'received', time: genTime() };
-    chat.messages.push(reply);
-    chat.lastMessage = random;
-    chat.time = genTime();
-  }, 1000);
-
+  dataStore.chats.push(chat);
   res.json(chat);
 });
 
-app.post('/api/profile', (req, res) => {
-  const { name, about, phone, avatar } = req.body;
-  if (name) db.user.name = name;
-  if (about) db.user.about = about;
-  if (phone) db.user.phone = phone;
-  if (avatar) db.user.avatar = avatar;
-  res.json(db.user);
-});
-
-// Fallback to index.html for SPA paths (if necessary)
+// Fallback: root route to ensure single-page app works if opened directly
 app.get((req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
-  console.log(`Server running on http://localhost:${PORT}`);
 });
